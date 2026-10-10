@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>국소배기장치 필요환기량 계산기</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { color: #333; text-align: center; margin-bottom: 20px; font-size: 1.2rem; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-weight: bold; margin-bottom: 4px; color: #555; font-size: 0.9rem; }
+        select, input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        button { width: 100%; background-color: #007bff; color: white; padding: 12px; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .result-box { margin-top: 20px; background: #e9ecef; padding: 15px; border-radius: 4px; text-align: center; }
+        .result-box h3 { margin: 0 0 5px 0; color: #333; font-size: 1rem; }
+        .result-value { font-size: 20px; font-weight: bold; color: #d9534f; }
+        .input-field { display: none; }
+        .active { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>국소배기장치 필요환기량(Q) 산정</h2>
+    
+    <div class="form-group">
+        <label for="hoodType">후드 유형 선택</label>
+        <select id="hoodType" onchange="updateFields()">
+            <option value="">-- 선택하세요 --</option>
+            <option value="booth">1. 포위식(부스식) 후드</option>
+            <option value="ext_normal">2-1. 외부식 (일반)</option>
+            <option value="ext_flange">2-2. 외부식 (플랜지 부착 일반)</option>
+            <option value="ext_slot">2-3. 슬롯형 (Slot)</option>
+            <option value="ext_slot_flange">2-4. 플랜지 부착 슬롯형</option>
+            <option value="canopy">3. 캐노피식 후드</option>
+        </select>
+    </div>
+
+    <div class="form-group input-field common-input">
+        <label for="vc">제어풍속 Vc (m/s)</label>
+        <input type="number" id="vc" step="0.1" placeholder="예: 1.0">
+    </div>
+
+    <div class="form-group input-field" id="field_w">
+        <label for="w">후드 가로면 길이 W (m)</label>
+        <input type="number" id="w" step="0.01" placeholder="예: 0.5">
+    </div>
+
+    <div class="form-group input-field" id="field_h">
+        <label for="h">후드 개구면 높이 H (m)</label>
+        <input type="number" id="h" step="0.01" placeholder="예: 0.4">
+    </div>
+
+    <div class="form-group input-field" id="field_l">
+        <label for="l">슬롯 또는 캐노피 길이 L (m)</label>
+        <input type="number" id="l" step="0.01" placeholder="예: 1.0">
+    </div>
+
+    <div class="form-group input-field" id="field_x">
+        <label for="x">발생원과 후드 간의 거리 X (m)</label>
+        <input type="number" id="x" step="0.01" placeholder="예: 0.3">
+    </div>
+
+    <button onclick="calculateQ()">필요환기량(Q) 계산하기</button>
+
+    <div class="result-box">
+        <h3>산정된 필요환기량 (Q)</h3>
+        <div class="result-value" id="resultText">0.00 m³/min</div>
+    </div>
+</div>
+
+<script>
+function updateFields() {
+    const type = document.getElementById("hoodType").value;
+    document.querySelectorAll('.input-field').forEach(el => el.classList.remove('active'));
+    if (!type) return;
+    document.querySelector('.common-input').classList.add('active');
+
+    if (type === 'booth') {
+        document.getElementById('field_w').classList.add('active');
+        document.getElementById('field_h').classList.add('active');
+    } else if (type === 'ext_normal' || type === 'ext_flange') {
+        document.getElementById('field_w').classList.add('active');
+        document.getElementById('field_h').classList.add('active');
+        document.getElementById('field_x').classList.add('active');
+    } else if (type === 'ext_slot') {
+        document.getElementById('field_l').classList.add('active');
+    } else if (type === 'ext_slot_flange') {
+        document.getElementById('field_l').classList.add('active');
+        document.getElementById('field_x').classList.add('active');
+    } else if (type === 'canopy') {
+        document.getElementById('field_w').classList.add('active');
+        document.getElementById('field_l').classList.add('active');
+        document.getElementById('field_h').classList.add('active');
+    }
+}
+
+function calculateQ() {
+    const type = document.getElementById("hoodType").value;
+    const vc = parseFloat(document.getElementById("vc").value) || 0;
+    const w = parseFloat(document.getElementById("w").value) || 0;
+    const h = parseFloat(document.getElementById("h").value) || 0;
+    const l = parseFloat(document.getElementById("l").value) || 0;
+    const x = parseFloat(document.getElementById("x").value) || 0;
+    let q = 0, area = w * h;
+
+    switch(type) {
+        case 'booth': q = 60 * vc * area; break;
+        case 'ext_normal': q = 60 * vc * (10 * Math.pow(x, 2) + area); break;
+        case 'ext_flange': q = 60 * 0.75 * vc * (10 * Math.pow(x, 2) + area); break;
+        case 'ext_slot': q = 60 * 5.0 * l * vc; break;
+        case 'ext_slot_flange': q = 60 * 3.75 * l * x * vc; break;
+        case 'canopy': q = 60 * 1.4 * (2 * (w + l)) * h * vc; break;
+        default: alert("후드 유형을 선택해주세요."); return;
+    }
+    document.getElementById("resultText").innerText = q.toFixed(2) + " m³/min";
+}
+</script>
+
+</body>
+</html>
